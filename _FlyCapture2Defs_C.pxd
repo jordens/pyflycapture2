@@ -103,11 +103,29 @@ cdef extern from "FlyCapture2Defs_C.h":
     cdef enum _fc2InterfaceType:
         FC2_INTERFACE_IEEE1394
         FC2_INTERFACE_USB_2
+        FC2_INTERFACE_USB_3
         FC2_INTERFACE_GIGE
         FC2_INTERFACE_UNKNOWN
         FC2_INTERFACE_TYPE_FORCE_32BITS
 
     ctypedef _fc2InterfaceType fc2InterfaceType
+
+    cdef enum _fc2DriverType:
+        FC2_DRIVER_1394_CAM
+        FC2_DRIVER_1394_PRO
+        FC2_DRIVER_1394_JUJU
+        FC2_DRIVER_1394_VIDEO1394
+        FC2_DRIVER_1394_RAW1394
+        FC2_DRIVER_USB_NONE
+        FC2_DRIVER_USB_CAM
+        FC2_DRIVER_USB3_PRO
+        FC2_DRIVER_GIGE_NONE
+        FC2_DRIVER_GIGE_FILTER
+        FC2_DRIVER_GIGE_PRO
+        FC2_DRIVER_UNKNOWN
+        FC2_DRIVER_FORCE_32BITS
+
+    ctypedef _fc2DriverType fc2DriverType
 
     cdef enum _fc2PropertyType:
         FC2_BRIGHTNESS
@@ -234,6 +252,8 @@ cdef extern from "FlyCapture2Defs_C.h":
         FC2_PIXEL_FORMAT_BGRU
         FC2_PIXEL_FORMAT_RGB
         FC2_PIXEL_FORMAT_RGBU
+        FC2_PIXEL_FORMAT_BGR16
+        FC2_PIXEL_FORMAT_422YUV8_JPEG
         FC2_NUM_PIXEL_FORMATS
         FC2_UNSPECIFIED_PIXEL_FORMAT
 
@@ -247,6 +267,7 @@ cdef extern from "FlyCapture2Defs_C.h":
         FC2_BUSSPEED_S800
         FC2_BUSSPEED_S1600
         FC2_BUSSPEED_S3200
+        FC2_BUSSPEED_S5000
         FC2_BUSSPEED_10BASE_T
         FC2_BUSSPEED_100BASE_T
         FC2_BUSSPEED_1000BASE_T
@@ -258,6 +279,14 @@ cdef extern from "FlyCapture2Defs_C.h":
 
     ctypedef _fc2BusSpeed fc2BusSpeed
 
+    cdef enum _fc2PCIeBusSpeed:
+        FC2_PCIE_BUSSPEED_2_5
+        FC2_PCIE_BUSSPEED_5_0
+        FC2_PCIE_BUSSPEED_UNKNOWN
+        FC2_PCIE_BUSSPEED_FORCE_32BITS
+
+    ctypedef _fc2PCIeBusSpeed fc2PCIeBusSpeed
+
     cdef enum _fc2ColorProcessingAlgorithm:
         FC2_DEFAULT
         FC2_NO_COLOR_PROCESSING
@@ -265,6 +294,8 @@ cdef extern from "FlyCapture2Defs_C.h":
         FC2_EDGE_SENSING
         FC2_HQ_LINEAR
         FC2_RIGOROUS
+        FC2_IPP
+        FC2_DIRECTIONAL
         FC2_COLOR_PROCESSING_ALGORITHM_FORCE_32BITS
 
     ctypedef _fc2ColorProcessingAlgorithm fc2ColorProcessingAlgorithm
@@ -335,6 +366,7 @@ cdef extern from "FlyCapture2Defs_C.h":
         unsigned int stride
         unsigned char *pData
         unsigned int dataSize
+        unsigned int receivedDataSize
         fc2PixelFormat format
         fc2BayerTileFormat bayerFormat
         fc2ImageImpl imageImpl
@@ -368,11 +400,14 @@ cdef extern from "FlyCapture2Defs_C.h":
     cdef struct _fc2Config:
         unsigned int numBuffers
         unsigned int numImageNotifications
+        unsigned int minNumImageNotifications
         int grabTimeout
         fc2GrabMode grabMode
         fc2BusSpeed isochBusSpeed
         fc2BusSpeed asyncBusSpeed
         fc2BandwidthAllocation bandwidthAllocation
+        unsigned int registerTimeoutRetries
+        unsigned int registerTimeout
         unsigned int reserved[16]
 
     ctypedef _fc2Config fc2Config
@@ -479,6 +514,7 @@ cdef extern from "FlyCapture2Defs_C.h":
         unsigned int imageHStepSize
         unsigned int imageVStepSize
         unsigned int pixelFormatBitField
+        unsigned int vendorPixelFormatBitField
         unsigned int packetSize
         unsigned int minPacketSize
         unsigned int maxPacketSize
@@ -529,8 +565,9 @@ cdef extern from "FlyCapture2Defs_C.h":
     ctypedef _fc2GigEStreamChannel fc2GigEStreamChannel
 
     cdef struct _fc2GigEConfig:
-        unsigned int numChannels
-        fc2GigEStreamChannel channels[512]
+        BOOL enablePacketResend
+        unsigned int timeoutForPacketResend
+        unsigned int maxPacketsToResend
         unsigned int reserved[8]
 
     ctypedef _fc2GigEConfig fc2GigEConfig
@@ -543,6 +580,7 @@ cdef extern from "FlyCapture2Defs_C.h":
         unsigned int imageHStepSize
         unsigned int imageVStepSize
         unsigned int pixelFormatBitField
+        unsigned int vendorPixelFormatBitField
         unsigned int reserved[16]
 
     ctypedef _fc2GigEImageSettingsInfo fc2GigEImageSettingsInfo
@@ -586,6 +624,7 @@ cdef extern from "FlyCapture2Defs_C.h":
     cdef struct _fc2CameraInfo:
         unsigned int serialNumber
         fc2InterfaceType interfaceType
+        fc2DriverType driverType
         BOOL isColorCamera
         char modelName[512]
         char vendorName[512]
@@ -595,7 +634,10 @@ cdef extern from "FlyCapture2Defs_C.h":
         char firmwareVersion[512]
         char firmwareBuildTime[512]
         fc2BusSpeed maximumBusSpeed
+        fc2PCIeBusSpeed pcieBusSpeed
         fc2BayerTileFormat bayerTileFormat
+        short unsigned int busNumber
+        short unsigned int nodeNumber
         unsigned int iidcVer
         fc2ConfigROM configROM
         unsigned int gigEMajorVersion
@@ -713,6 +755,22 @@ cdef extern from "FlyCapture2Defs_C.h":
         unsigned int reserved[256]
 
     ctypedef _fc2AVIOption fc2AVIOption
+
+    cdef struct _fc2MJPGOption:
+        float frameRate
+        unsigned int quality
+        unsigned int reserved[256]
+
+    ctypedef _fc2MJPGOption fc2MJPGOption
+
+    cdef struct _fc2H264Option:
+        float frameRate
+        unsigned int width
+        unsigned int height
+        unsigned int bitrate
+        unsigned int reserved[256]
+
+    ctypedef _fc2H264Option fc2H264Option
 
     ctypedef void *fc2CallbackHandle
 
