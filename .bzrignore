@@ -1,4 +1,4 @@
 ./flycapture2.c
 ./FlyCapture2*_C.h
-./_FlyCapture2Defs_C.pxd
-./_FlyCapture2_C.pxd
+./build
+./dist
