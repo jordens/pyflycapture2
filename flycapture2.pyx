@@ -37,13 +37,8 @@ cdef class Context:
 
     def get_camera_from_index(self, unsigned int index):
         cdef fc2PGRGuid g
-        cdef unsigned int a, b, c, d
         check_error(fc2GetCameraFromIndex(self.ctx, index, &g))
-        a = g.value[0]
-        b = g.value[1]
-        c = g.value[2]
-        d = g.value[3]
-        return a, b, c, d
+        return g.value[0], g.value[1], g.value[2], g.value[3]
 
     def get_camera_info(self):
         cdef fc2CameraInfo i
@@ -57,8 +52,8 @@ cdef class Context:
              "firmware_build_time": i.firmwareBuildTime,}
         return r
 
-    def connect(self, unsigned int a, unsigned int b, unsigned int c,
-            unsigned int d):
+    def connect(self, unsigned int a, unsigned int b,
+            unsigned int c, unsigned int d):
         cdef fc2PGRGuid g
         g.value[0] = a
         g.value[1] = b
@@ -92,7 +87,9 @@ cdef class Context:
 
 cdef class Image:
     cdef fc2Image img
+
     def __cinit__(self):
         check_error(fc2CreateImage(&self.img))
+
     def __dealloc__(self):
         check_error(fc2DestroyImage(&self.img))
