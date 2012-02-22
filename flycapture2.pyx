@@ -3,6 +3,9 @@ from _FlyCapture2_C cimport *
 import numpy as np
 cimport numpy as np
 
+from cpython cimport PyObject, Py_INCREF
+
+
 class ApiError(BaseException):
     pass
 
@@ -55,10 +58,7 @@ cdef class Context:
     def connect(self, unsigned int a, unsigned int b,
             unsigned int c, unsigned int d):
         cdef fc2PGRGuid g
-        g.value[0] = a
-        g.value[1] = b
-        g.value[2] = c
-        g.value[3] = d
+        g.value[0], g.value[1], g.value[2], g.value[3] = a, b, c, d
         check_error(fc2Connect(self.ctx, &g))
 
     def disconnect(self):
@@ -93,3 +93,15 @@ cdef class Image:
 
     def __dealloc__(self):
         check_error(fc2DestroyImage(&self.img))
+
+    def __array__(self):
+        cdef np.ndarray[np.uint8_t, ndim=3] r
+        cdef np.npy_intp shape[3]
+        shape[0] = self.img.rows
+        shape[1] = self.img.cols
+        shape[2] = self.img.dataSize/self.img.rows/self.img.cols
+        r = np.PyArray_SimpleNewFromData(3, shape, np.NPY_UINT8,
+                self.img.pData)
+        r.img = self
+        Py_INCREF(self)
+        return r
