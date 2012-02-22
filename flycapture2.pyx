@@ -5,6 +5,7 @@ cimport numpy as np
 
 from cpython cimport PyObject, Py_INCREF
 
+np.import_array()
 
 class ApiError(BaseException):
     pass
@@ -95,13 +96,13 @@ cdef class Image:
         check_error(fc2DestroyImage(&self.img))
 
     def __array__(self):
-        cdef np.ndarray[np.uint8_t, ndim=3] r
+        cdef np.ndarray r
         cdef np.npy_intp shape[3]
         shape[0] = self.img.rows
         shape[1] = self.img.cols
         shape[2] = self.img.dataSize/self.img.rows/self.img.cols
         r = np.PyArray_SimpleNewFromData(3, shape, np.NPY_UINT8,
                 self.img.pData)
-        r.img = self
+        r.base = <PyObject *>self
         Py_INCREF(self)
         return r

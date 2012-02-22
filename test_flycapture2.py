@@ -9,12 +9,10 @@ def test():
     print c.get_camera_info()
     #c.set_video_mode_and_frame_rate(fc2.FC2_VIDEOMODE_1280x960Y8,
     #        fc2.FC2_FRAMERATE_7_5)
-    #b = np.empty((6, 1280*960), dtype=np.uint8)
-    #c.set_user_buffers(b)
     c.start_capture()
     im = fc2.Image()
     print [c.retrieve_buffer(im) for i in range(8)]
-    print np.array(im)
+    print np.array(im).shape
     c.stop_capture()
     c.disconnect()
 
