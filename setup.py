@@ -15,6 +15,8 @@ setup(
     url="http://launchpad.net/pyflycapture2",
     #packages=["flycapture2"],
     cmdclass = {'build_ext': build_ext},
-    ext_modules = [Extension("flycapture2", ["flycapture2.pyx"],
-        libraries = ["flycapture-c"])]
+    ext_modules = [Extension("flycapture2",
+        sources = ["flycapture2.pyx"],
+        libraries = ["flycapture-c"],
+        include_dirs = ["/usr/include/flycapture/C"])]
 )
