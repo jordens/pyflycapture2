@@ -11,8 +11,9 @@ def test():
     #        fc2.FC2_FRAMERATE_7_5)
     c.start_capture()
     im = fc2.Image()
-    print [c.retrieve_buffer(im) for i in range(8)]
-    print np.array(im).shape
+    print [np.array(c.retrieve_buffer(im)).sum() for i in range(80)]
+    a = np.array(im)
+    print a.shape, a.base
     c.stop_capture()
     c.disconnect()
 

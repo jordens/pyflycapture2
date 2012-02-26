@@ -60,7 +60,7 @@ cdef extern from "FlyCapture2_C.h":
 
     fc2Error fc2StartSyncCaptureCallback(unsigned int numCameras, fc2Context *pContexts, fc2ImageEventCallback *pCallbackFns, void **pCallbackDataArray)
 
-    fc2Error fc2RetrieveBuffer(fc2Context context, fc2Image *pImage)
+    fc2Error fc2RetrieveBuffer(fc2Context context, fc2Image *pImage) nogil
 
     fc2Error fc2StopCapture(fc2Context context)
 
@@ -198,9 +198,9 @@ cdef extern from "FlyCapture2_C.h":
 
     char *fc2GetRegisterString(unsigned int registerVal)
 
-    fc2Error fc2CreateImage(fc2Image *pImage)
+    fc2Error fc2CreateImage(fc2Image *pImage) nogil
 
-    fc2Error fc2DestroyImage(fc2Image *image)
+    fc2Error fc2DestroyImage(fc2Image *image) nogil
 
     fc2Error fc2SetDefaultColorProcessing(fc2ColorProcessingAlgorithm defaultMethod)
 
