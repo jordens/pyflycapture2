@@ -1,5 +1,5 @@
 # grep "^        FC2_" _FlyCapture2Defs_C.pxd | grep -v "FORCE_32BITS" |
-# perl -pe 's/^ *FC2_(.*)$/$1 = FC2_$1/' > flycapture2_enums.pxd
+# perl -pe 's/^ *FC2_(.*)$/$1 = FC2_$1/' > flycapture2_enums.pxi
 
 from _FlyCapture2Defs_C cimport *
 
