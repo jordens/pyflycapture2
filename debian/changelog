@@ -1,0 +1,5 @@
+python-flycapture2 (0.1-0) unstable; urgency=low
+
+  * Initial packaging
+
+ -- Robert Jordens <jordens@phys.ethz.ch>  Sun, 26 Feb 2012 05:39:53 -0700
