@@ -16,7 +16,7 @@ setup(
     #packages=["flycapture2"],
     cmdclass = {'build_ext': build_ext},
     ext_modules = [Extension("flycapture2",
-        sources = ["flycapture2.pyx"],
+        sources = ["src/flycapture2.pyx"],
         libraries = ["flycapture-c"],
         include_dirs = ["/usr/include/flycapture/C"])]
 )

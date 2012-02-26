@@ -1,4 +1,10 @@
-./flycapture2.c
-./FlyCapture2*_C.h
+src/flycapture2.c
 ./build
 ./dist
+*.egg-info
+debian/files
+debian/*.debhelper
+debian/*.substvars
+debian/*-stampdir
+debian/*.log
+debian/python-flycapture2
