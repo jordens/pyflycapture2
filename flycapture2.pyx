@@ -1,4 +1,5 @@
 from _FlyCapture2_C cimport *
+include "flycapture2_enums.pxi"
 
 import numpy as np
 cimport numpy as np
@@ -89,11 +90,11 @@ cdef class Context:
             r = fc2Disconnect(self.ctx)
         raise_error(r)
 
-    def set_video_mode_and_frame_rate(self, int mode, int framerate):
+    def set_video_mode_and_frame_rate(self, fc2VideoMode mode,
+            fc2FrameRate framerate):
         cdef fc2Error r
         with nogil:
-            r = fc2SetVideoModeAndFrameRate(self.ctx,
-                <fc2VideoMode>mode, <fc2FrameRate>framerate)
+            r = fc2SetVideoModeAndFrameRate(self.ctx, mode, framerate)
         raise_error(r)
 
     def set_user_buffers(self,
@@ -121,6 +122,65 @@ cdef class Context:
             r = fc2RetrieveBuffer(self.ctx, &img.img)
         raise_error(r)
         return img
+
+    def get_property_info(self, fc2PropertyType prop):
+        cdef fc2PropertyInfo pi
+        pi.type = prop
+        cdef fc2Error r
+        with nogil:
+            r = fc2GetPropertyInfo(self.ctx, &pi)
+        raise_error(r)
+        return {"type": pi.type,
+                "present": bool(pi.present),
+                "auto_supported": bool(pi.autoSupported),
+                "manual_supported": bool(pi.manualSupported),
+                "on_off_supported": bool(pi.onOffSupported),
+                "one_push_supported": bool(pi.onePushSupported),
+                "abs_val_supported": bool(pi.absValSupported),
+                "read_out_supported": bool(pi.readOutSupported),
+                "min": pi.min,
+                "max": pi.max,
+                "abs_min": pi.absMin,
+                "abs_max": pi.absMax,
+                "units": pi.pUnits,
+                "unit_abbr": pi.pUnitAbbr,
+                }
+
+    def get_property(self, fc2PropertyType type):
+        cdef fc2Error r
+        cdef fc2Property p
+        p.type = type
+        with nogil:
+            r = fc2GetProperty(self.ctx, &p)
+        raise_error(r)
+        return {"type": p.type,
+                "present": bool(p.present),
+                "auto_manual_mode": bool(p.autoManualMode),
+                "abs_control": bool(p.absControl),
+                "on_off": bool(p.onOff),
+                "one_push": bool(p.onePush),
+                "abs_value": p.absValue,
+                "value_a": p.valueA,
+                "value_b": p.valueB,
+                }
+
+    def set_property(self, type, present, on_off, auto_manual_mode,
+            abs_control, one_push, abs_value, value_a, value_b):
+        cdef fc2Error r
+        cdef fc2Property p
+        p.type = type
+        p.present = present
+        p.autoManualMode = auto_manual_mode
+        p.absControl = abs_control
+        p.onOff = on_off
+        p.onePush = one_push
+        p.absValue = abs_value
+        p.valueA = value_a
+        p.valueB = value_b
+        with nogil:
+            r = fc2SetProperty(self.ctx, &p)
+        raise_error(r)
+
 
 cdef class Image:
     cdef fc2Image img
