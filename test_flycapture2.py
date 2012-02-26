@@ -9,6 +9,9 @@ def test():
     print c.get_camera_info()
     c.set_video_mode_and_frame_rate(fc2.VIDEOMODE_1280x960Y8,
             fc2.FRAMERATE_7_5)
+    m, f = c.get_video_mode_and_frame_rate()
+    print m, f
+    print c.get_video_mode_and_frame_rate_info(m, f)
     print c.get_property_info(fc2.FRAME_RATE)
     p = c.get_property(fc2.FRAME_RATE)
     print p

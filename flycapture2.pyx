@@ -90,6 +90,25 @@ cdef class Context:
             r = fc2Disconnect(self.ctx)
         raise_error(r)
 
+    def get_video_mode_and_frame_rate_info(self, 
+            fc2VideoMode mode, fc2FrameRate framerate):
+        cdef fc2Error r
+        cdef BOOL supp
+        with nogil:
+            r = fc2GetVideoModeAndFrameRateInfo(self.ctx, mode,
+                    framerate, &supp)
+        raise_error(r)
+        return bool(supp)
+
+    def get_video_mode_and_frame_rate(self):
+        cdef fc2Error r
+        cdef fc2VideoMode mode
+        cdef fc2FrameRate framerate
+        with nogil:
+            r = fc2GetVideoModeAndFrameRate(self.ctx, &mode, &framerate)
+        raise_error(r)
+        return mode, framerate
+
     def set_video_mode_and_frame_rate(self, fc2VideoMode mode,
             fc2FrameRate framerate):
         cdef fc2Error r
