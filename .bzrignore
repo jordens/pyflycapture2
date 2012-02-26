@@ -1,4 +1,5 @@
 src/flycapture2.c
+src/flycapture2.html
 ./build
 ./dist
 *.egg-info
