@@ -10,7 +10,7 @@ np.import_array()
 class ApiError(BaseException):
     pass
 
-cdef check_error(fc2Error e):
+cdef raise_error(fc2Error e):
     if e != FC2_ERROR_OK:
         raise ApiError(e, fc2ErrorToDescription(e))
 
@@ -24,61 +24,94 @@ cdef class Context:
     cdef fc2Context ctx
 
     def __cinit__(self):
-        check_error(fc2CreateContext(&self.ctx))
+        cdef fc2Error r
+        with nogil:
+            r = fc2CreateContext(&self.ctx)
+        raise_error(r)
 
     def __dealloc__(self):
-        check_error(fc2DestroyContext(self.ctx))
+        cdef fc2Error r
+        with nogil:
+            r = fc2DestroyContext(&self.ctx)
+        raise_error(r)
 
     def get_num_of_cameras(self):
         cdef unsigned int n
-        check_error(fc2GetNumOfCameras(self.ctx, &n))
+        cdef fc2Error r
+        with nogil:
+            r = fc2GetNumOfCameras(self.ctx, &n)
+        raise_error(r)
         return n
 
     def get_num_of_devices(self):
         cdef unsigned int n
-        check_error(fc2GetNumOfDevices(self.ctx, &n))
+        cdef fc2Error r
+        with nogil:
+            r = fc2GetNumOfDevices(self.ctx, &n)
+        raise_error(r)
         return n
 
     def get_camera_from_index(self, unsigned int index):
         cdef fc2PGRGuid g
-        check_error(fc2GetCameraFromIndex(self.ctx, index, &g))
+        cdef fc2Error r
+        with nogil:
+            r = fc2GetCameraFromIndex(self.ctx, index, &g)
+        raise_error(r)
         return g.value[0], g.value[1], g.value[2], g.value[3]
 
     def get_camera_info(self):
         cdef fc2CameraInfo i
-        check_error(fc2GetCameraInfo(self.ctx, &i))
-        r = {"serial_number": i.serialNumber,
+        cdef fc2Error r
+        with nogil:
+            r = fc2GetCameraInfo(self.ctx, &i)
+        raise_error(r)
+        ret = {"serial_number": i.serialNumber,
              "model_name": i.modelName,
              "vendor_name": i.vendorName,
              "sensor_info": i.sensorInfo,
              "sensor_resolution": i.sensorResolution,
              "firmware_version": i.firmwareVersion,
              "firmware_build_time": i.firmwareBuildTime,}
-        return r
+        return ret
 
     def connect(self, unsigned int a, unsigned int b,
             unsigned int c, unsigned int d):
         cdef fc2PGRGuid g
+        cdef fc2Error r
         g.value[0], g.value[1], g.value[2], g.value[3] = a, b, c, d
-        check_error(fc2Connect(self.ctx, &g))
+        with nogil:
+            r = fc2Connect(self.ctx, &g)
+        raise_error(r)
 
     def disconnect(self):
-        check_error(fc2Disconnect(self.ctx))
+        cdef fc2Error r
+        with nogil:
+            r = fc2Disconnect(self.ctx)
+        raise_error(r)
 
     def set_video_mode_and_frame_rate(self, int mode, int framerate):
-        check_error(fc2SetVideoModeAndFrameRate(self.ctx,
-            <fc2VideoMode>mode, <fc2FrameRate>framerate))
+        cdef fc2Error r
+        with nogil:
+            r = fc2SetVideoModeAndFrameRate(self.ctx,
+                <fc2VideoMode>mode, <fc2FrameRate>framerate)
+        raise_error(r)
 
     def set_user_buffers(self,
             np.ndarray[np.uint8_t, ndim=2] buff not None):
-        check_error(fc2SetUserBuffers(self.ctx, <unsigned char *>buff.data,
+        raise_error(fc2SetUserBuffers(self.ctx, <unsigned char *>buff.data,
             buff.shape[1], buff.shape[0]))
 
     def start_capture(self):
-        check_error(fc2StartCapture(self.ctx))
+        cdef fc2Error r
+        with nogil:
+            r = fc2StartCapture(self.ctx)
+        raise_error(r)
 
     def stop_capture(self):
-        check_error(fc2StopCapture(self.ctx))
+        cdef fc2Error r
+        with nogil:
+            r = fc2StopCapture(self.ctx)
+        raise_error(r)
 
     def retrieve_buffer(self, Image img=None):
         cdef fc2Error r
@@ -86,7 +119,7 @@ cdef class Context:
             img = Image()
         with nogil:
             r = fc2RetrieveBuffer(self.ctx, &img.img)
-        check_error(r)
+        raise_error(r)
         return img
 
 cdef class Image:
@@ -96,13 +129,13 @@ cdef class Image:
         cdef fc2Error r
         with nogil:
             r = fc2CreateImage(&self.img)
-        check_error(r)
+        raise_error(r)
 
     def __dealloc__(self):
         cdef fc2Error r
         with nogil:
             r = fc2DestroyImage(&self.img)
-        check_error(r)
+        raise_error(r)
 
     def __array__(self):
         cdef np.ndarray r
