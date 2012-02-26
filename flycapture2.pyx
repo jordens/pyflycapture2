@@ -32,7 +32,7 @@ cdef class Context:
     def __dealloc__(self):
         cdef fc2Error r
         with nogil:
-            r = fc2DestroyContext(&self.ctx)
+            r = fc2DestroyContext(self.ctx)
         raise_error(r)
 
     def get_num_of_cameras(self):
