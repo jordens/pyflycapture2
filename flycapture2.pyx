@@ -81,19 +81,28 @@ cdef class Context:
         check_error(fc2StopCapture(self.ctx))
 
     def retrieve_buffer(self, Image img=None):
+        cdef fc2Error r
         if img is None:
             img = Image()
-        check_error(fc2RetrieveBuffer(self.ctx, &img.img))
+        with nogil:
+            r = fc2RetrieveBuffer(self.ctx, &img.img)
+        check_error(r)
         return img
 
 cdef class Image:
     cdef fc2Image img
 
     def __cinit__(self):
-        check_error(fc2CreateImage(&self.img))
+        cdef fc2Error r
+        with nogil:
+            r = fc2CreateImage(&self.img)
+        check_error(r)
 
     def __dealloc__(self):
-        check_error(fc2DestroyImage(&self.img))
+        cdef fc2Error r
+        with nogil:
+            r = fc2DestroyImage(&self.img)
+        check_error(r)
 
     def __array__(self):
         cdef np.ndarray r
