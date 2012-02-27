@@ -9,12 +9,15 @@ Build-Depends: cdbs,
  debhelper (>= 5),
  cython,
  libflycapture-c2-dev (>= 2.2.3),
- python-numpy,
+ libusb-1.0-0-dev,
+ python-numpy
 XS-Python-Version: >=2.5
 Standards-Version: 3.9.1.0
 
 Package: python-flycapture2
 Architecture: all
 XB-Python-Version: ${python:Versions}
-Depends: ${misc:Depends}, ${python:Depends}
+Depends: ${misc:Depends}, ${python:Depends},
+ python-numpy, libflycapture-c2 (>= 2.2.3),
+ libusb-1.0-0
 Description: Python wrapper for libflycapture-c2

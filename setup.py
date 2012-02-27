@@ -13,6 +13,8 @@ setup(
     author="Robert Jordens",
     author_email="jordens@phys.ethz.ch",
     url="http://launchpad.net/pyflycapture2",
+    license="GPLv3+",
+    install_requires=["numpy"],
     #packages=["flycapture2"],
     cmdclass = {'build_ext': build_ext},
     ext_modules = [Extension("flycapture2",
