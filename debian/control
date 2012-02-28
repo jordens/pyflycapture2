@@ -2,9 +2,8 @@ Source: python-flycapture2
 Section: python
 Priority: optional
 Maintainer: Robert Jordens <jordens@phys.ethz.ch>
-Build-Depends: cdbs,
- python-central (>= 0.6.0),
- python,
+Build-Depends: cdbs (>= 0.4.90~),
+ python (>= 2.6.6-3~),
  python-setuptools,
  debhelper (>= 5),
  cython,
@@ -12,7 +11,7 @@ Build-Depends: cdbs,
  libusb-1.0-0-dev,
  python-numpy
 XS-Python-Version: >=2.5
-Standards-Version: 3.9.1.0
+Standards-Version: 3.9.3
 
 Package: python-flycapture2
 Architecture: all
@@ -20,4 +19,15 @@ XB-Python-Version: ${python:Versions}
 Depends: ${misc:Depends}, ${python:Depends},
  python-numpy, libflycapture-c2 (>= 2.2.3),
  libusb-1.0-0
+Provides: ${python:Provides}
 Description: Python wrapper for libflycapture-c2
+ Cython based python bindings for the FlyCapture2 C API from PointGrey.
+ .
+ The library itself is available from PointGrey:
+ http://www.ptgrey.com/support/downloads/download.asp (login required)
+ .
+ API docs:
+ http://www.ptgrey.com/support/downloads/documents/flycapture/Doxygen/C/html/index.html
+ (C API)
+ http://www.ptgrey.com/support/downloads/documents/flycapture/Doxygen/html/index.html
+ (C++ API) 
