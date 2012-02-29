@@ -26,7 +26,7 @@ from cpython cimport PyObject, Py_INCREF
 
 np.import_array()
 
-class ApiError(BaseException):
+class ApiError(Exception):
     pass
 
 cdef raise_error(fc2Error e):
