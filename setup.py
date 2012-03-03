@@ -44,7 +44,7 @@ http://www.ptgrey.com/support/downloads/documents/flycapture/Doxygen/C/html/inde
 (C API)
 http://www.ptgrey.com/support/downloads/documents/flycapture/Doxygen/html/index.html
 (C++ API)""",
-    version="0.1",
+    version="0.1+dev",
     author="Robert Jordens",
     author_email="jordens@phys.ethz.ch",
     url="http://launchpad.net/pyflycapture2",
