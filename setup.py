@@ -35,8 +35,16 @@ pointgrey_win = "C:/Program Files (x86)/Point Grey Research/FlyCapture2"
 
 setup(
     name="pyflycapture2",
-    version="0.1",
     description="python wrapper for libflycapture2 (C-API)",
+    long_description=
+"""The library itself is available from PointGrey:
+http://www.ptgrey.com/support/downloads/download.asp (login required)
+API docs:
+http://www.ptgrey.com/support/downloads/documents/flycapture/Doxygen/C/html/index.html
+(C API)
+http://www.ptgrey.com/support/downloads/documents/flycapture/Doxygen/html/index.html
+(C++ API)""",
+    version="0.1",
     author="Robert Jordens",
     author_email="jordens@phys.ethz.ch",
     url="http://launchpad.net/pyflycapture2",
