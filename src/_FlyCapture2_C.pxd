@@ -276,6 +276,4 @@ cdef extern from "FlyCapture2_C.h":
 
     fc2Error fc2LaunchCommandAsync(char *pCommand, fc2AsyncCommandCallback pCallback, void *pUserData) nogil
 
-    char *fc2ErrorToDescription(fc2Error error)
-
-
+    char *fc2ErrorToDescription(fc2Error error) nogil

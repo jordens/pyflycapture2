@@ -35,7 +35,10 @@ cdef raise_error(fc2Error e):
 
 def get_library_version():
     cdef fc2Version v
-    fc2GetLibraryVersion(&v)
+    cdef fc2Error r
+    with nogil:
+        r = fc2GetLibraryVersion(&v)
+    raise_error(r)
     return {"major": v.major, "minor": v.minor,
             "type": v.type, "build": v.build}
 
@@ -136,8 +139,11 @@ cdef class Context:
 
     def set_user_buffers(self,
             np.ndarray[np.uint8_t, ndim=2] buff not None):
-        raise_error(fc2SetUserBuffers(self.ctx, <unsigned char *>buff.data,
-            buff.shape[1], buff.shape[0]))
+        cdef fc2Error r
+        r = fc2SetUserBuffers(self.ctx, <unsigned char *>buff.data,
+            buff.shape[1], buff.shape[0])
+        raise_error(r)
+        # TODO: INCREF buff
 
     def start_capture(self):
         cdef fc2Error r
@@ -180,8 +186,7 @@ cdef class Context:
                 "abs_min": pi.absMin,
                 "abs_max": pi.absMax,
                 "units": pi.pUnits,
-                "unit_abbr": pi.pUnitAbbr,
-                }
+                "unit_abbr": pi.pUnitAbbr,}
 
     def get_property(self, fc2PropertyType type):
         cdef fc2Error r
@@ -198,8 +203,7 @@ cdef class Context:
                 "one_push": bool(p.onePush),
                 "abs_value": p.absValue,
                 "value_a": p.valueA,
-                "value_b": p.valueB,
-                }
+                "value_b": p.valueB,}
 
     def set_property(self, type, present, on_off, auto_manual_mode,
             abs_control, one_push, abs_value, value_a, value_b):
