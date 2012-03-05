@@ -24,6 +24,12 @@ cimport numpy as np
 
 from cpython cimport PyObject, Py_INCREF
 
+cdef extern from "numpy/arrayobject.h":
+    object PyArray_NewFromDescr(object subtype, np.dtype descr,
+                                int nd, np.npy_intp* dims,
+                                np.npy_intp* strides,
+                                void* data, int flags, object obj)
+
 np.import_array()
 
 class ApiError(Exception):
@@ -240,12 +246,26 @@ cdef class Image:
 
     def __array__(self):
         cdef np.ndarray r
-        cdef np.npy_intp shape[3]
+        cdef np.npy_intp shape[2]
+        cdef np.npy_intp stride[2]
+        cdef np.dtype dtype
+        if self.img.format == PIXEL_FORMAT_MONO8:
+            dtye = np.uint8
+            stride[1] = 1
+        elif self.img.format == PIXEL_FORMAT_MONO16:
+            dtye = np.uint16
+            stride[1] = 2
+        else:
+            dtype = np.uint8
+            stride[1] = self.img.stride/self.img.cols
+        Py_INCREF(dtype)
         shape[0] = self.img.rows
         shape[1] = self.img.cols
-        shape[2] = self.img.dataSize/self.img.rows/self.img.cols
-        r = np.PyArray_SimpleNewFromData(3, shape, np.NPY_UINT8,
-                self.img.pData)
+        stride[0] = self.img.stride
+        assert stride[0] == stride[1]*shape[1]
+        r = PyArray_NewFromDescr(np.ndarray, dtype,
+                2, shape, stride,
+                self.img.pData, np.NPY_DEFAULT, None)
         r.base = <PyObject *>self
         Py_INCREF(self)
         return r
