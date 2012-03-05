@@ -250,19 +250,20 @@ cdef class Image:
         cdef np.npy_intp stride[2]
         cdef np.dtype dtype
         if self.img.format == PIXEL_FORMAT_MONO8:
-            dtye = np.uint8
+            dtype = np.dtype("uint8")
             stride[1] = 1
         elif self.img.format == PIXEL_FORMAT_MONO16:
-            dtye = np.uint16
+            dtype = np.dtype("uint16")
             stride[1] = 2
         else:
-            dtype = np.uint8
+            dtype = np.dtype("uint8")
             stride[1] = self.img.stride/self.img.cols
         Py_INCREF(dtype)
         shape[0] = self.img.rows
         shape[1] = self.img.cols
         stride[0] = self.img.stride
-        assert stride[0] == stride[1]*shape[1]
+        #assert stride[0] == stride[1]*shape[1]
+        #assert shape[0]*shape[1]*stride[1] == self.img.dataSize
         r = PyArray_NewFromDescr(np.ndarray, dtype,
                 2, shape, stride,
                 self.img.pData, np.NPY_DEFAULT, None)
