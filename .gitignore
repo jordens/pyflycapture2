@@ -1,0 +1,11 @@
+/src/flycapture2.c
+/src/flycapture2.html
+/build
+/dist
+*.egg-info
+/debian/files
+/debian/*.debhelper
+/debian/*.substvars
+/debian/*-stampdir
+/debian/*.log
+/debian/python-flycapture2
