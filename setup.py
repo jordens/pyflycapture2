@@ -31,7 +31,16 @@ if os.name == "posix":
     libname = "flycapture-c"
 else:
     libname = "flycapture2_c"
-pointgrey_win = "C:/Program Files (x86)/Point Grey Research/FlyCapture2"
+
+if os.path.exists("C:/Program Files (x86)/Point Grey Research/FlyCapture2"):
+    pointgrey_win = "C:/Program Files (x86)/Point Grey Research/FlyCapture2"
+elif os.path.exists("C:/Program Files/Point Grey Research/FlyCapture2"):
+    pointgrey_win = "C:/Program Files/Point Grey Research/FlyCapture2"
+
+if os.path.exists(pointgrey_win+"/lib/C"):
+    libfolder = "/lib/C"
+elif os.path.exists(pointgrey_win+"/lib64/C"):
+    libfolder = "/lib64/C"
 
 setup(
     name="pyflycapture2",
@@ -57,7 +66,7 @@ http://www.ptgrey.com/support/downloads/documents/flycapture/Doxygen/html/index.
         sources = ["src/flycapture2.pyx", "src/flycapture2_enums.pxi",
             "src/_FlyCapture2Defs_C.pxd", "src/_FlyCapture2_C.pxd",],
         libraries = [libname],
-        library_dirs = ["%s/lib/C" % pointgrey_win],
+        library_dirs = ["%s%s" % (pointgrey_win, libfolder)],
         include_dirs = ["/usr/include/flycapture/C",
             "%s/include/C" % pointgrey_win,
             numpy.get_include(), ],
