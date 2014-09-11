@@ -34,12 +34,12 @@ else:
 
 if os.path.exists("C:/Program Files (x86)/Point Grey Research/FlyCapture2"):
     pointgrey_win = "C:/Program Files (x86)/Point Grey Research/FlyCapture2"
-elif os.path.exists("C:/Program Files/Point Grey Research/FlyCapture2"):
+else:
     pointgrey_win = "C:/Program Files/Point Grey Research/FlyCapture2"
 
 if os.path.exists(pointgrey_win+"/lib/C"):
     libfolder = "/lib/C"
-elif os.path.exists(pointgrey_win+"/lib64/C"):
+else:
     libfolder = "/lib64/C"
 
 setup(
