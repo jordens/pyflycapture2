@@ -227,6 +227,38 @@ cdef class Context:
         with nogil:
             r = fc2SetProperty(self.ctx, &p)
         raise_error(r)
+    
+    def get_trigger_mode(self):
+        cdef fc2Error r
+        cdef fc2TriggerMode tm
+        with nogil:
+            r = fc2GetTriggerMode(self.ctx, &tm)
+        return {"on_off": bool(tm.onOff),
+                "polarity": tm.polarity,
+                "source": tm.source,
+                "mode": tm.mode,
+                "parameter": tm.parameter }
+
+    def set_trigger_mode(self, on_off, polarity, source,
+            mode, parameter):
+        cdef fc2Error r
+        cdef fc2TriggerMode tm
+        tm.onOff = on_off
+        tm.polarity = polarity
+        tm.source = source
+        tm.mode = mode
+        tm.parameter = parameter
+        with nogil:
+            r = fc2SetTriggerMode(self.ctx, &tm)
+        raise_error(r)
+    
+    def fire_software_trigger(self):
+        cdef fc2Error r
+        with nogil:
+            r = fc2FireSoftwareTrigger(self.ctx)
+        raise_error(r)
+    
+        
 
 
 cdef class Image:
