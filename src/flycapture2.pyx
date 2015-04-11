@@ -237,7 +237,7 @@ cdef class Context:
                 "polarity": tm.polarity,
                 "source": tm.source,
                 "mode": tm.mode,
-                "parameter": tm.parameter }
+                "parameter": tm.parameter,}
 
     def set_trigger_mode(self, on_off, polarity, source,
             mode, parameter):
@@ -252,15 +252,65 @@ cdef class Context:
             r = fc2SetTriggerMode(self.ctx, &tm)
         raise_error(r)
     
+    def get_format7_info(self, mode):
+        cdef fc2Error r
+        cdef fc2Format7Info info
+        cdef BOOL supported
+        info.mode = mode
+        with nogil:
+            r = fc2GetFormat7Info(self.ctx, &info, &supported)
+        raise_error(r)
+        return {"mode": info.mode,
+                "max_width": info.maxWidth,
+                "max_height": info.maxHeight,
+                "offset_h_step_size": info.offsetHStepSize,
+                "offset_v_step_size": info.offsetVStepSize,
+                "image_h_step_size": info.imageHStepSize,
+                "image_v_step_size": info.imageVStepSize,
+                "pixel_format_bit_field": info.pixelFormatBitField,
+                "vendor_pixel_format_bit_field": info.vendorPixelFormatBitField,
+                "packet_size": info.packetSize,
+                "min_packet_size": info.minPacketSize,
+                "max_packet_size": info.maxPacketSize,
+                "percentage": info.percentage,}, supported  
+    
     def fire_software_trigger(self):
         cdef fc2Error r
         with nogil:
             r = fc2FireSoftwareTrigger(self.ctx)
         raise_error(r)
-    
         
-
-
+    def get_format7_configuration(self):
+        cdef fc2Error r
+        cdef fc2Format7ImageSettings s
+        cdef unsigned packetSize
+        cdef float percentage
+        with nogil:
+            r = fc2GetFormat7Configuration(self.ctx, &s, &packetSize, &percentage)
+        raise_error(r)
+        return {"mode": s.mode,
+                "offset_x": s.offsetX,
+                "offset_y": s.offsetY,
+                "width": s.width,
+                "height": s.height,
+                "pixel_format": s.pixelFormat,}
+                
+    def set_format7_configuration(self, mode, offset_x, offset_y, width, height, pixel_format):
+        cdef fc2Error r
+        cdef fc2Format7ImageSettings s
+        cdef float f = 100.0
+        s.mode = mode
+        s.offsetX = offset_x
+        s.offsetY = offset_y
+        s.width = width
+        s.height = height
+        s.pixelFormat = pixel_format
+        with nogil:
+            r = fc2SetFormat7Configuration(self.ctx, &s, f)
+        raise_error(r)
+    
+                
+                
 cdef class Image:
     cdef fc2Image img
 
@@ -302,3 +352,6 @@ cdef class Image:
         r.base = <PyObject *>self
         Py_INCREF(self)
         return r
+
+    def get_format(self):
+        return self.img.format
