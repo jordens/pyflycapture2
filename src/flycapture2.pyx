@@ -87,6 +87,14 @@ cdef class Context:
         raise_error(r)
         return g.value[0], g.value[1], g.value[2], g.value[3]
 
+    def get_camera_from_serial_number(self, unsigned int serial_number):
+        cdef fc2PGRGuid g
+        cdef fc2Error r
+        with nogil:
+            r = fc2GetCameraFromSerialNumber(self.ctx, serial_number, &g)
+        raise_error(r)
+        return g.value[0], g.value[1], g.value[2], g.value[3]
+
     def get_camera_info(self):
         cdef fc2CameraInfo i
         cdef fc2Error r
