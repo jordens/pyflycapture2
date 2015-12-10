@@ -1,4 +1,4 @@
-# -*- coding: utf8 -*-
+# -*- coding: utf-8 -*-
 #
 #   pyflycapture2 - python bindings for libflycapture2_c
 #   Copyright (C) 2012 Robert Jordens <jordens@phys.ethz.ch>
