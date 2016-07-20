@@ -125,7 +125,7 @@ cdef class Context:
             r = fc2Disconnect(self.ctx)
         raise_error(r)
 
-    def get_video_mode_and_frame_rate_info(self, 
+    def get_video_mode_and_frame_rate_info(self,
             fc2VideoMode mode, fc2FrameRate framerate):
         cdef fc2Error r
         cdef BOOL supp
@@ -235,7 +235,7 @@ cdef class Context:
         with nogil:
             r = fc2SetProperty(self.ctx, &p)
         raise_error(r)
-    
+
     def get_trigger_mode(self):
         cdef fc2Error r
         cdef fc2TriggerMode tm
@@ -259,7 +259,7 @@ cdef class Context:
         with nogil:
             r = fc2SetTriggerMode(self.ctx, &tm)
         raise_error(r)
-    
+
     def get_format7_info(self, mode):
         cdef fc2Error r
         cdef fc2Format7Info info
@@ -280,14 +280,14 @@ cdef class Context:
                 "packet_size": info.packetSize,
                 "min_packet_size": info.minPacketSize,
                 "max_packet_size": info.maxPacketSize,
-                "percentage": info.percentage,}, supported  
-    
+                "percentage": info.percentage,}, supported
+
     def fire_software_trigger(self):
         cdef fc2Error r
         with nogil:
             r = fc2FireSoftwareTrigger(self.ctx)
         raise_error(r)
-        
+
     def get_format7_configuration(self):
         cdef fc2Error r
         cdef fc2Format7ImageSettings s
@@ -302,7 +302,7 @@ cdef class Context:
                 "width": s.width,
                 "height": s.height,
                 "pixel_format": s.pixelFormat,}
-                
+
     def set_format7_configuration(self, mode, offset_x, offset_y, width, height, pixel_format):
         cdef fc2Error r
         cdef fc2Format7ImageSettings s
@@ -316,9 +316,9 @@ cdef class Context:
         with nogil:
             r = fc2SetFormat7Configuration(self.ctx, &s, f)
         raise_error(r)
-    
-                
-                
+
+
+
 cdef class Image:
     cdef fc2Image img
 
@@ -336,15 +336,28 @@ cdef class Image:
 
     def __array__(self):
         cdef np.ndarray r
-        cdef np.npy_intp shape[2]
-        cdef np.npy_intp stride[2]
+        cdef np.npy_intp shape[3]
+        cdef np.npy_intp stride[3]
         cdef np.dtype dtype
+        ndim = 2
         if self.img.format == PIXEL_FORMAT_MONO8:
             dtype = np.dtype("uint8")
             stride[1] = 1
         elif self.img.format == PIXEL_FORMAT_MONO16:
             dtype = np.dtype("uint16")
             stride[1] = 2
+        elif self.img.format == PIXEL_FORMAT_RGB8 or self.img.format == PIXEL_FORMAT_444YUV8:
+            dtype = np.dtype("uint8")
+            ndim = 3
+            stride[1] = 3
+            stride[2] = 1
+            shape[2] = 3
+        elif self.img.format == PIXEL_FORMAT_422YUV8:
+            dtype = np.dtype("uint8")
+            ndim = 3
+            stride[1] = 2
+            stride[2] = 1
+            shape[2] = 2
         else:
             dtype = np.dtype("uint8")
             stride[1] = self.img.stride/self.img.cols
@@ -355,7 +368,7 @@ cdef class Image:
         #assert stride[0] == stride[1]*shape[1]
         #assert shape[0]*shape[1]*stride[1] == self.img.dataSize
         r = PyArray_NewFromDescr(np.ndarray, dtype,
-                2, shape, stride,
+                ndim, shape, stride,
                 self.img.pData, np.NPY_DEFAULT, None)
         r.base = <PyObject *>self
         Py_INCREF(self)
