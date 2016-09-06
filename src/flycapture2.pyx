@@ -317,16 +317,62 @@ cdef class Context:
             r = fc2SetFormat7Configuration(self.ctx, &s, f)
         raise_error(r)
 
+    def get_configuration(self):
+        cdef fc2Error r
+        cdef fc2Config config
+        with nogil:
+            r = fc2GetConfiguration(self.ctx, &config)
+        raise_error(r)
+        return {
+            "num_buffers": config.numBuffers,
+            "num_image_notifications": config.numImageNotifications,
+            "min_num_image_notifications": config.minNumImageNotifications,
+            "grab_timeout": config.grabTimeout,
+            "grab_mode": config.grabMode,
+            "high_performance_retrieve_buffer": config.highPerformanceRetrieveBuffer,
+            "isoch_bus_speed": config.isochBusSpeed,
+            "async_bus_speed": config.asyncBusSpeed,
+            "bandwidth_allocation": config.bandwidthAllocation,
+            "register_timeout_retries": config.registerTimeoutRetries,
+            "register_timeout": config.registerTimeout,
+        }
+
+    def set_configuration(self, num_buffers,
+                          num_image_notifications, min_num_image_notifications,
+                          grab_timeout, grab_mode, high_performance_retrieve_buffer,
+                          isoch_bus_speed, async_bus_speed,
+                          bandwidth_allocation,
+                          register_timeout_retries, register_timeout):
+        cdef fc2Error r
+        cdef fc2Config config
+        config.numBuffers = num_buffers
+        config.numImageNotifications = num_image_notifications
+        config.minNumImageNotifications = min_num_image_notifications
+        config.grabTimeout = grab_timeout
+        config.grabMode = grab_mode
+        config.highPerformanceRetrieveBuffer = high_performance_retrieve_buffer
+        config.isochBusSpeed = isoch_bus_speed
+        config.asyncBusSpeed = async_bus_speed
+        config.bandwidthAllocation = bandwidth_allocation
+        config.registerTimeoutRetries = register_timeout_retries
+        config.registerTimeout = register_timeout
+        with nogil:
+            r = fc2SetConfiguration(self.ctx, &config)
+        raise_error(r)
 
 
 cdef class Image:
     cdef fc2Image img
+    cdef object fmt
 
     def __cinit__(self):
         cdef fc2Error r
         with nogil:
             r = fc2CreateImage(&self.img)
         raise_error(r)
+
+    def __init__(self):
+        self.fmt = None
 
     def __dealloc__(self):
         cdef fc2Error r
@@ -339,20 +385,21 @@ cdef class Image:
         cdef np.npy_intp shape[3]
         cdef np.npy_intp stride[3]
         cdef np.dtype dtype
+        fmt = self.fmt or self.img.format
         ndim = 2
-        if self.img.format == PIXEL_FORMAT_MONO8:
+        if fmt == PIXEL_FORMAT_MONO8:
             dtype = np.dtype("uint8")
             stride[1] = 1
-        elif self.img.format == PIXEL_FORMAT_MONO16:
+        elif fmt == PIXEL_FORMAT_MONO16:
             dtype = np.dtype("uint16")
             stride[1] = 2
-        elif self.img.format == PIXEL_FORMAT_RGB8 or self.img.format == PIXEL_FORMAT_444YUV8:
+        elif fmt == PIXEL_FORMAT_RGB8 or fmt == PIXEL_FORMAT_444YUV8:
             dtype = np.dtype("uint8")
             ndim = 3
             stride[1] = 3
             stride[2] = 1
             shape[2] = 3
-        elif self.img.format == PIXEL_FORMAT_422YUV8:
+        elif fmt == PIXEL_FORMAT_422YUV8:
             dtype = np.dtype("uint8")
             ndim = 3
             stride[1] = 2
@@ -374,5 +421,8 @@ cdef class Image:
         Py_INCREF(self)
         return r
 
+    def set_format(self, fmt):
+        self.fmt = fmt
+
     def get_format(self):
-        return self.img.format
+        return self.fmt or self.img.format
