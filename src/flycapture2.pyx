@@ -260,6 +260,32 @@ cdef class Context:
             r = fc2SetTriggerMode(self.ctx, &tm)
         raise_error(r)
 
+    def get_strobe_mode(self):
+        cdef fc2Error r
+        cdef fc2StrobeControl ctl
+        with nogil:
+            r = fc2GetStrobe(self.ctx, &ctl)
+        raise_error(r)
+        return {
+            'source': ctl.source,
+            'on_off': bool(ctl.onOff),
+            'polarity': ctl.polarity,
+            'delay': ctl.delay,
+            'duration': ctl.duration,
+        }
+
+    def set_strobe_mode(self, source, on_off, polarity, delay, duration):
+        cdef fc2Error r
+        cdef fc2StrobeControl ctl
+        ctl.source = source
+        ctl.onOff = on_off
+        ctl.polarity = polarity
+        ctl.delay = delay
+        ctl.duration = duration
+        with nogil:
+            r = fc2SetStrobe(self.ctx, &ctl)
+        raise_error(r)
+
     def get_format7_info(self, mode):
         cdef fc2Error r
         cdef fc2Format7Info info
@@ -380,6 +406,17 @@ cdef class Image:
             r = fc2DestroyImage(&self.img)
         raise_error(r)
 
+    def convert_to(self, fmt, Image dst=None):
+        cdef fc2Error r
+        cdef fc2PixelFormat _fmt
+        _fmt = fmt
+        if dst == None:
+            dst = Image()
+        with nogil:
+            r = fc2ConvertImageTo(_fmt, &self.img, &dst.img)
+        raise_error(r)
+        return dst
+
     def __array__(self):
         cdef np.ndarray r
         cdef np.npy_intp shape[3]
@@ -387,10 +424,10 @@ cdef class Image:
         cdef np.dtype dtype
         fmt = self.fmt or self.img.format
         ndim = 2
-        if fmt == PIXEL_FORMAT_MONO8:
+        if fmt == PIXEL_FORMAT_MONO8 or fmt == PIXEL_FORMAT_RAW8:
             dtype = np.dtype("uint8")
             stride[1] = 1
-        elif fmt == PIXEL_FORMAT_MONO16:
+        elif fmt == PIXEL_FORMAT_MONO16 or fmt == PIXEL_FORMAT_RAW16:
             dtype = np.dtype("uint16")
             stride[1] = 2
         elif fmt == PIXEL_FORMAT_RGB8 or fmt == PIXEL_FORMAT_444YUV8:
