@@ -421,7 +421,7 @@ cdef extern from "FlyCapture2Defs_C.h":
         unsigned int minNumImageNotifications
         int grabTimeout
         fc2GrabMode grabMode
-        int highPerformanceRetrieveBuffer
+        BOOL highPerformanceRetrieveBuffer
         fc2BusSpeed isochBusSpeed
         fc2BusSpeed asyncBusSpeed
         fc2BandwidthAllocation bandwidthAllocation
