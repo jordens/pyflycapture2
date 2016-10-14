@@ -406,6 +406,20 @@ cdef class Image:
             r = fc2DestroyImage(&self.img)
         raise_error(r)
 
+    @staticmethod
+    def get_default_color_processing():
+        cdef fc2ColorProcessingAlgorithm alg
+        with nogil:
+            r = fc2GetDefaultColorProcessing(&alg)
+        raise_error(r)
+        return alg
+
+    @staticmethod
+    def set_default_color_processing(fc2ColorProcessingAlgorithm alg):
+        with nogil:
+            r = fc2SetDefaultColorProcessing(alg)
+        raise_error(r)
+
     def convert_to(self, fmt, Image dst=None):
         cdef fc2Error r
         cdef fc2PixelFormat _fmt
