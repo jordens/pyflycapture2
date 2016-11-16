@@ -23,6 +23,7 @@ import numpy as np
 cimport numpy as np
 
 from cpython cimport PyObject, Py_INCREF
+from libc.stdlib cimport malloc, free # gige support
 
 cdef extern from "numpy/arrayobject.h":
     object PyArray_NewFromDescr(object subtype, np.dtype descr,
@@ -50,12 +51,17 @@ def get_library_version():
 
 cdef class Context:
     cdef fc2Context ctx
-
-    def __cinit__(self):
-        cdef fc2Error r
-        with nogil:
-            r = fc2CreateContext(&self.ctx)
-        raise_error(r)
+    def __cinit__(self, context_type='USB'):
+        cdef fc2Error r                
+        # GigE support        
+        if context_type == 'GigE':
+            with nogil:
+                r = fc2CreateGigEContext(&self.ctx)
+            raise_error(r)            
+        else:
+            with nogil:
+                r = fc2CreateContext(&self.ctx)
+            raise_error(r)
 
     def __dealloc__(self):
         cdef fc2Error r
@@ -96,6 +102,7 @@ cdef class Context:
         return g.value[0], g.value[1], g.value[2], g.value[3]
 
     def get_camera_info(self):
+        interface_dict = { 0:"IEEE1394", 1:"USB2", 2:"USB3", 3:"GIGE", 4:"UNKNOWN" }        
         cdef fc2CameraInfo i
         cdef fc2Error r
         with nogil:
@@ -106,6 +113,8 @@ cdef class Context:
              "vendor_name": i.vendorName,
              "sensor_info": i.sensorInfo,
              "sensor_resolution": i.sensorResolution,
+             "driver_name" : i.driverName,  # Gige support
+             "interface" : interface_dict[i.interfaceType], # Gige support
              "firmware_version": i.firmwareVersion,
              "firmware_build_time": i.firmwareBuildTime,}
         return ret
@@ -385,6 +394,165 @@ cdef class Context:
         with nogil:
             r = fc2SetConfiguration(self.ctx, &config)
         raise_error(r)
+        
+        
+    ############################################################
+    # GigE support
+
+    def set_byteorder_littleendian(self):
+        '''Get byte order        
+        '''
+        cdef fc2Error r
+        cdef unsigned int regval = 0        
+        
+        with nogil:    
+            r = fc2WriteRegister(self.ctx, 0x1048, regval)
+        raise_error(r)
+        
+    def set_byteorder_bigendian(self):
+        '''Get byte order        
+        '''
+        cdef fc2Error r
+        cdef unsigned int regval = 1<<31      
+        
+        with nogil:    
+            r = fc2WriteRegister(self.ctx, 0x1048, regval)
+        raise_error(r)
+
+        
+    def rescan_bus(self):
+        '''Rescans the bus to discover new devices.
+        '''
+        cdef fc2Error r
+        with nogil:
+            r = fc2RescanBus(self.ctx)
+        raise_error(r)
+        
+    def get_gige_cams(self):
+        '''Returns a list of the serial numbers of the connected GigE cameras.
+        '''
+        cdef fc2Error error
+        cdef fc2Error r
+        cdef fc2CameraInfo cams[8]
+        cdef fc2CameraInfo *pcams = NULL
+        cdef unsigned int count = sizeof(cams)
+        cdef int i
+
+        with nogil:
+            error = fc2DiscoverGigECameras(self.ctx, cams, &count)
+        if error == FC2_ERROR_BUFFER_TOO_SMALL:
+            pcams = <fc2CameraInfo *>malloc(count * sizeof(fc2CameraInfo))
+            if pcams == NULL:
+                raise MemoryError()
+
+            try:
+                with nogil:
+                    r = fc2DiscoverGigECameras(self.ctx, pcams, &count)
+                raise_error(r)
+                return [pcams[i].serialNumber for i in range(count)]
+            finally:
+                free(pcams)
+        elif error != FC2_ERROR_OK:
+            raise_error(error)
+        else:
+            return [cams[i].serialNumber for i in range(count)]
+        
+    def verify_gige_mode(self, mode):
+        '''Checks if the GigE camera mode is supported.
+        '''
+        cdef fc2Error r
+        cdef fc2Mode fcmode
+        cdef BOOL supported = 0
+        if mode >= <int>FC2_NUM_MODES or mode < <int>FC2_MODE_0:
+            raise Exception('Unrecognized mode {}'.format(mode))
+
+        fcmode = <fc2Mode>mode
+        with nogil:
+            r = fc2QueryGigEImagingMode(self.ctx, fcmode, &supported)
+        raise_error(r)
+        return bool(supported)
+        
+    def get_gige_config(self):
+        '''Returns the current GigE configuration.
+        Returns a dict whose keys are ``'offset_x'``, ``'offset_y'``,
+        ``'width'``, ``'height'``, ``'fmt'``.
+        '''
+        cdef fc2Error r
+        cdef fc2GigEImageSettings settings
+
+        with nogil:
+            r = fc2GetGigEImageSettings(self.ctx, &settings)
+        raise_error(r)
+        return {'offset_x': settings.offsetX, 'offset_y': settings.offsetY,
+                 'width': settings.width, 'height': settings.height,
+                 'fmt': pixel_fmts_inv.get(settings.pixelFormat, 'unknown')}
+                 
+    def set_gige_config(self, offset_x, offset_y, width, height, fmt):
+        '''Sets the GigE configuration. Similar to :meth:`get_gige_config`.
+        '''
+        cdef fc2Error r
+        cdef fc2GigEImageSettings settings
+        if fmt not in pixel_fmts:
+            raise Exception('{} not found in {}'.format(fmt, ', '.join(pixel_fmts.keys())))
+
+        settings.offsetX = offset_x
+        settings.offsetY = offset_y
+        settings.width = width
+        settings.height = height
+        settings.pixelFormat = pixel_fmts[fmt]
+        with nogil:
+            r = fc2SetGigEImageSettings(self.ctx, &settings)
+        raise_error(r)   
+        
+    def get_gige_num_streams(self):
+        '''Gets the number of stream for the camera.
+        '''
+        cdef fc2Error r
+        cdef unsigned int value
+        with nogil:
+            r = fc2GetNumStreamChannels(self.ctx, &value)
+        raise_error(r)
+        return value
+        
+    def get_gige_stream_config(self, unsigned int chan):
+        '''Returns a dict with the with information about the channel.
+        Its keys are ``'net_index'``, ``'host_post'``, ``'frag'``,
+        ``'packet_size'``, ``'delay'``, ``'dest_ip'``, ``'src_port'``.
+        '''
+        cdef fc2Error r
+        cdef fc2GigEStreamChannel config
+        cdef int i
+        with nogil:
+            r = fc2GetGigEStreamChannelInfo(self.ctx, chan, &config)
+        raise_error(r)
+        return {
+            'net_index': config.networkInterfaceIndex,            
+            'frag': bool(config.doNotFragment),
+            'packet_size': config.packetSize,
+            'delay': config.interPacketDelay,
+            'dest_ip': [config.destinationIpAddress.octets[i] for i in range(4)],
+            'src_port': config.sourcePort}
+        
+    def set_gige_stream_config( self, unsigned int chan, net_index, frag, packet_size, delay,
+            dest_ip, src_port):
+        '''Sets the stream configuration. Similar to :meth:`get_gige_stream_config`.
+        '''
+        cdef fc2Error r
+        cdef int i
+        cdef fc2GigEStreamChannel config
+
+        config.networkInterfaceIndex = net_index        
+        config.doNotFragment = frag
+        config.packetSize = packet_size
+        config.interPacketDelay = delay
+
+        for i in range(4):
+            config.destinationIpAddress.octets[i] = dest_ip[i]
+        config.sourcePort = src_port
+
+        with nogil:
+            r = fc2SetGigEStreamChannelInfo(self.ctx, chan, &config)
+        raise_error(r)
 
 
 cdef class Image:
@@ -477,3 +645,5 @@ cdef class Image:
 
     def get_format(self):
         return self.fmt or self.img.format
+        
+   
