@@ -640,5 +640,4 @@ cdef class Image:
         self.fmt = fmt
 
     def get_format(self):
-        return self.fmt or self.img.format
-   
+        return self.fmt or self.img.format 
