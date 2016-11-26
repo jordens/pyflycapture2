@@ -23,7 +23,7 @@ import numpy as np
 cimport numpy as np
 
 from cpython cimport PyObject, Py_INCREF
-from libc.stdlib cimport malloc, free # gige support
+from libc.stdlib cimport malloc, free
 
 cdef extern from "numpy/arrayobject.h":
     object PyArray_NewFromDescr(object subtype, np.dtype descr,
@@ -32,6 +32,30 @@ cdef extern from "numpy/arrayobject.h":
                                 void* data, int flags, object obj)
 
 np.import_array()
+
+cdef dict pixel_fmts = {
+    'mono8': FC2_PIXEL_FORMAT_MONO8,
+    'yuv411': FC2_PIXEL_FORMAT_411YUV8,
+    'yuv422': FC2_PIXEL_FORMAT_422YUV8,
+    'yuv444': FC2_PIXEL_FORMAT_444YUV8,
+    'rgb8': FC2_PIXEL_FORMAT_RGB8,
+    'mono16': FC2_PIXEL_FORMAT_MONO16,
+    'rgb16': FC2_PIXEL_FORMAT_RGB16,
+    's_mono16': FC2_PIXEL_FORMAT_S_MONO16,
+    's_rgb16': FC2_PIXEL_FORMAT_S_RGB16,
+    'raw8': FC2_PIXEL_FORMAT_RAW8,
+    'raw16': FC2_PIXEL_FORMAT_RAW16,
+    'mono12': FC2_PIXEL_FORMAT_MONO12,
+    'raw12': FC2_PIXEL_FORMAT_RAW12,
+    'bgr': FC2_PIXEL_FORMAT_BGR,
+    'bgru': FC2_PIXEL_FORMAT_BGRU,
+    'rgb': FC2_PIXEL_FORMAT_RGB,
+    'rgbu': FC2_PIXEL_FORMAT_RGBU,
+    'bgr16': FC2_PIXEL_FORMAT_BGR16,
+    'yuv422_jpeg': FC2_PIXEL_FORMAT_422YUV8_JPEG,
+    }
+    
+cdef dict pixel_fmts_inv = {v: k for k, v in pixel_fmts.items()}
 
 class ApiError(Exception):
     pass
@@ -51,10 +75,9 @@ def get_library_version():
 
 cdef class Context:
     cdef fc2Context ctx
-    def __cinit__(self, context_type='USB'):
+    def __cinit__(self, gige_context=False):
         cdef fc2Error r                
-        # GigE support        
-        if context_type == 'GigE':
+        if gige_context:
             with nogil:
                 r = fc2CreateGigEContext(&self.ctx)
             raise_error(r)            
@@ -102,7 +125,7 @@ cdef class Context:
         return g.value[0], g.value[1], g.value[2], g.value[3]
 
     def get_camera_info(self):
-        interface_dict = { 0:"IEEE1394", 1:"USB2", 2:"USB3", 3:"GIGE", 4:"UNKNOWN" }        
+        interface_dict = {0: "IEEE1394", 1: "USB2", 2: "USB3", 3: "GIGE", 4: "UNKNOWN"}
         cdef fc2CameraInfo i
         cdef fc2Error r
         with nogil:
@@ -113,8 +136,8 @@ cdef class Context:
              "vendor_name": i.vendorName,
              "sensor_info": i.sensorInfo,
              "sensor_resolution": i.sensorResolution,
-             "driver_name" : i.driverName,  # Gige support
-             "interface" : interface_dict[i.interfaceType], # Gige support
+             "driver_name" : i.driverName,
+             "interface" : interface_dict[i.interfaceType],
              "firmware_version": i.firmwareVersion,
              "firmware_build_time": i.firmwareBuildTime,}
         return ret
@@ -393,15 +416,9 @@ cdef class Context:
         config.registerTimeout = register_timeout
         with nogil:
             r = fc2SetConfiguration(self.ctx, &config)
-        raise_error(r)
-        
-        
-    ############################################################
-    # GigE support
+        raise_error(r)        
 
     def set_byteorder_littleendian(self):
-        '''Get byte order        
-        '''
         cdef fc2Error r
         cdef unsigned int regval = 0        
         
@@ -410,8 +427,6 @@ cdef class Context:
         raise_error(r)
         
     def set_byteorder_bigendian(self):
-        '''Get byte order        
-        '''
         cdef fc2Error r
         cdef unsigned int regval = 1<<31      
         
@@ -421,16 +436,12 @@ cdef class Context:
 
         
     def rescan_bus(self):
-        '''Rescans the bus to discover new devices.
-        '''
         cdef fc2Error r
         with nogil:
             r = fc2RescanBus(self.ctx)
         raise_error(r)
         
-    def get_gige_cams(self):
-        '''Returns a list of the serial numbers of the connected GigE cameras.
-        '''
+    def discover_gige_cameras(self):
         cdef fc2Error error
         cdef fc2Error r
         cdef fc2CameraInfo cams[8]
@@ -457,9 +468,7 @@ cdef class Context:
         else:
             return [cams[i].serialNumber for i in range(count)]
         
-    def verify_gige_mode(self, mode):
-        '''Checks if the GigE camera mode is supported.
-        '''
+    def query_gige_imaging_mode(self, mode):
         cdef fc2Error r
         cdef fc2Mode fcmode
         cdef BOOL supported = 0
@@ -472,11 +481,8 @@ cdef class Context:
         raise_error(r)
         return bool(supported)
         
+
     def get_gige_config(self):
-        '''Returns the current GigE configuration.
-        Returns a dict whose keys are ``'offset_x'``, ``'offset_y'``,
-        ``'width'``, ``'height'``, ``'fmt'``.
-        '''
         cdef fc2Error r
         cdef fc2GigEImageSettings settings
 
@@ -488,8 +494,6 @@ cdef class Context:
                  'fmt': pixel_fmts_inv.get(settings.pixelFormat, 'unknown')}
                  
     def set_gige_config(self, offset_x, offset_y, width, height, fmt):
-        '''Sets the GigE configuration. Similar to :meth:`get_gige_config`.
-        '''
         cdef fc2Error r
         cdef fc2GigEImageSettings settings
         if fmt not in pixel_fmts:
@@ -505,8 +509,6 @@ cdef class Context:
         raise_error(r)   
         
     def get_gige_num_streams(self):
-        '''Gets the number of stream for the camera.
-        '''
         cdef fc2Error r
         cdef unsigned int value
         with nogil:
@@ -515,10 +517,6 @@ cdef class Context:
         return value
         
     def get_gige_stream_config(self, unsigned int chan):
-        '''Returns a dict with the with information about the channel.
-        Its keys are ``'net_index'``, ``'host_post'``, ``'frag'``,
-        ``'packet_size'``, ``'delay'``, ``'dest_ip'``, ``'src_port'``.
-        '''
         cdef fc2Error r
         cdef fc2GigEStreamChannel config
         cdef int i
@@ -535,8 +533,6 @@ cdef class Context:
         
     def set_gige_stream_config( self, unsigned int chan, net_index, frag, packet_size, delay,
             dest_ip, src_port):
-        '''Sets the stream configuration. Similar to :meth:`get_gige_stream_config`.
-        '''
         cdef fc2Error r
         cdef int i
         cdef fc2GigEStreamChannel config
@@ -645,5 +641,4 @@ cdef class Image:
 
     def get_format(self):
         return self.fmt or self.img.format
-        
    
