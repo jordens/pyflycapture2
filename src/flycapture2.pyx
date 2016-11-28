@@ -479,8 +479,7 @@ cdef class Context:
         with nogil:
             r = fc2QueryGigEImagingMode(self.ctx, fcmode, &supported)
         raise_error(r)
-        return bool(supported)
-        
+        return bool(supported)        
 
     def get_gige_config(self):
         cdef fc2Error r
@@ -640,4 +639,4 @@ cdef class Image:
         self.fmt = fmt
 
     def get_format(self):
-        return self.fmt or self.img.format 
+        return self.fmt or self.img.format
