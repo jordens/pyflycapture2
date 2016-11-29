@@ -418,22 +418,24 @@ cdef class Context:
             r = fc2SetConfiguration(self.ctx, &config)
         raise_error(r)        
 
-    def set_byteorder_littleendian(self):
+    def read_register(self, address):
         cdef fc2Error r
-        cdef unsigned int regval = 0        
+        cdef unsigned int func_address = address
+        cdef unsigned int func_value
         
         with nogil:    
-            r = fc2WriteRegister(self.ctx, 0x1048, regval)
+            r = fc2ReadRegister(self.ctx, func_address, &func_value)
         raise_error(r)
-        
-    def set_byteorder_bigendian(self):
+        return func_value
+    
+    def write_register(self, address, value):
         cdef fc2Error r
-        cdef unsigned int regval = 1<<31      
+        cdef unsigned int func_address = address
+        cdef unsigned int func_value = value
         
         with nogil:    
-            r = fc2WriteRegister(self.ctx, 0x1048, regval)
+            r = fc2WriteRegister(self.ctx, func_address, func_value)
         raise_error(r)
-
         
     def rescan_bus(self):
         cdef fc2Error r
