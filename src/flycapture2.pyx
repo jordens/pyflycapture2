@@ -462,13 +462,13 @@ cdef class Context:
                 with nogil:
                     r = fc2DiscoverGigECameras(self.ctx, pcams, &count)
                 raise_error(r)
-                return [pcams[i].serialNumber for i in range(count)]
+                return [pcams[i] for i in range(count)]
             finally:
                 free(pcams)
         elif error != FC2_ERROR_OK:
             raise_error(error)
         else:
-            return [cams[i].serialNumber for i in range(count)]
+            return [cams[i] for i in range(count)]
         
     def query_gige_imaging_mode(self, mode):
         cdef fc2Error r
