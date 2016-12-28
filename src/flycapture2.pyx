@@ -23,6 +23,7 @@ import numpy as np
 cimport numpy as np
 
 from cpython cimport PyObject, Py_INCREF
+from libc.stdlib cimport malloc, free
 
 cdef extern from "numpy/arrayobject.h":
     object PyArray_NewFromDescr(object subtype, np.dtype descr,
@@ -31,6 +32,30 @@ cdef extern from "numpy/arrayobject.h":
                                 void* data, int flags, object obj)
 
 np.import_array()
+
+cdef dict pixel_fmts = {
+    'mono8': FC2_PIXEL_FORMAT_MONO8,
+    'yuv411': FC2_PIXEL_FORMAT_411YUV8,
+    'yuv422': FC2_PIXEL_FORMAT_422YUV8,
+    'yuv444': FC2_PIXEL_FORMAT_444YUV8,
+    'rgb8': FC2_PIXEL_FORMAT_RGB8,
+    'mono16': FC2_PIXEL_FORMAT_MONO16,
+    'rgb16': FC2_PIXEL_FORMAT_RGB16,
+    's_mono16': FC2_PIXEL_FORMAT_S_MONO16,
+    's_rgb16': FC2_PIXEL_FORMAT_S_RGB16,
+    'raw8': FC2_PIXEL_FORMAT_RAW8,
+    'raw16': FC2_PIXEL_FORMAT_RAW16,
+    'mono12': FC2_PIXEL_FORMAT_MONO12,
+    'raw12': FC2_PIXEL_FORMAT_RAW12,
+    'bgr': FC2_PIXEL_FORMAT_BGR,
+    'bgru': FC2_PIXEL_FORMAT_BGRU,
+    'rgb': FC2_PIXEL_FORMAT_RGB,
+    'rgbu': FC2_PIXEL_FORMAT_RGBU,
+    'bgr16': FC2_PIXEL_FORMAT_BGR16,
+    'yuv422_jpeg': FC2_PIXEL_FORMAT_422YUV8_JPEG,
+    }
+    
+cdef dict pixel_fmts_inv = {v: k for k, v in pixel_fmts.items()}
 
 class ApiError(Exception):
     pass
@@ -50,12 +75,16 @@ def get_library_version():
 
 cdef class Context:
     cdef fc2Context ctx
-
-    def __cinit__(self):
-        cdef fc2Error r
-        with nogil:
-            r = fc2CreateContext(&self.ctx)
-        raise_error(r)
+    def __cinit__(self, gige_context=False):
+        cdef fc2Error r                
+        if gige_context:
+            with nogil:
+                r = fc2CreateGigEContext(&self.ctx)
+            raise_error(r)            
+        else:
+            with nogil:
+                r = fc2CreateContext(&self.ctx)
+            raise_error(r)
 
     def __dealloc__(self):
         cdef fc2Error r
@@ -96,6 +125,7 @@ cdef class Context:
         return g.value[0], g.value[1], g.value[2], g.value[3]
 
     def get_camera_info(self):
+        interface_dict = {0: "IEEE1394", 1: "USB2", 2: "USB3", 3: "GIGE", 4: "UNKNOWN"}
         cdef fc2CameraInfo i
         cdef fc2Error r
         with nogil:
@@ -106,6 +136,8 @@ cdef class Context:
              "vendor_name": i.vendorName,
              "sensor_info": i.sensorInfo,
              "sensor_resolution": i.sensorResolution,
+             "driver_name" : i.driverName,
+             "interface" : interface_dict[i.interfaceType],
              "firmware_version": i.firmwareVersion,
              "firmware_build_time": i.firmwareBuildTime,}
         return ret
@@ -384,6 +416,139 @@ cdef class Context:
         config.registerTimeout = register_timeout
         with nogil:
             r = fc2SetConfiguration(self.ctx, &config)
+        raise_error(r)        
+
+    def read_register(self, address):
+        cdef fc2Error r
+        cdef unsigned int func_address = address
+        cdef unsigned int func_value
+        
+        with nogil:    
+            r = fc2ReadRegister(self.ctx, func_address, &func_value)
+        raise_error(r)
+        return func_value
+    
+    def write_register(self, address, value):
+        cdef fc2Error r
+        cdef unsigned int func_address = address
+        cdef unsigned int func_value = value
+        
+        with nogil:    
+            r = fc2WriteRegister(self.ctx, func_address, func_value)
+        raise_error(r)
+        
+    def rescan_bus(self):
+        cdef fc2Error r
+        with nogil:
+            r = fc2RescanBus(self.ctx)
+        raise_error(r)
+        
+    def discover_gige_cameras(self):
+        cdef fc2Error error
+        cdef fc2Error r
+        cdef fc2CameraInfo cams[8]
+        cdef fc2CameraInfo *pcams = NULL
+        cdef unsigned int count = sizeof(cams)
+        cdef int i
+
+        with nogil:
+            error = fc2DiscoverGigECameras(self.ctx, cams, &count)
+        if error == FC2_ERROR_BUFFER_TOO_SMALL:
+            pcams = <fc2CameraInfo *>malloc(count * sizeof(fc2CameraInfo))
+            if pcams == NULL:
+                raise MemoryError()
+
+            try:
+                with nogil:
+                    r = fc2DiscoverGigECameras(self.ctx, pcams, &count)
+                raise_error(r)
+                return [pcams[i] for i in range(count)]
+            finally:
+                free(pcams)
+        elif error != FC2_ERROR_OK:
+            raise_error(error)
+        else:
+            return [cams[i] for i in range(count)]
+        
+    def query_gige_imaging_mode(self, mode):
+        cdef fc2Error r
+        cdef fc2Mode fcmode
+        cdef BOOL supported = 0
+        if mode >= <int>FC2_NUM_MODES or mode < <int>FC2_MODE_0:
+            raise Exception('Unrecognized mode {}'.format(mode))
+
+        fcmode = <fc2Mode>mode
+        with nogil:
+            r = fc2QueryGigEImagingMode(self.ctx, fcmode, &supported)
+        raise_error(r)
+        return bool(supported)        
+
+    def get_gige_config(self):
+        cdef fc2Error r
+        cdef fc2GigEImageSettings settings
+
+        with nogil:
+            r = fc2GetGigEImageSettings(self.ctx, &settings)
+        raise_error(r)
+        return {'offset_x': settings.offsetX, 'offset_y': settings.offsetY,
+                 'width': settings.width, 'height': settings.height,
+                 'fmt': pixel_fmts_inv.get(settings.pixelFormat, 'unknown')}
+                 
+    def set_gige_config(self, offset_x, offset_y, width, height, fmt):
+        cdef fc2Error r
+        cdef fc2GigEImageSettings settings
+        if fmt not in pixel_fmts:
+            raise Exception('{} not found in {}'.format(fmt, ', '.join(pixel_fmts.keys())))
+
+        settings.offsetX = offset_x
+        settings.offsetY = offset_y
+        settings.width = width
+        settings.height = height
+        settings.pixelFormat = pixel_fmts[fmt]
+        with nogil:
+            r = fc2SetGigEImageSettings(self.ctx, &settings)
+        raise_error(r)   
+        
+    def get_gige_num_streams(self):
+        cdef fc2Error r
+        cdef unsigned int value
+        with nogil:
+            r = fc2GetNumStreamChannels(self.ctx, &value)
+        raise_error(r)
+        return value
+        
+    def get_gige_stream_config(self, unsigned int chan):
+        cdef fc2Error r
+        cdef fc2GigEStreamChannel config
+        cdef int i
+        with nogil:
+            r = fc2GetGigEStreamChannelInfo(self.ctx, chan, &config)
+        raise_error(r)
+        return {
+            'net_index': config.networkInterfaceIndex,            
+            'frag': bool(config.doNotFragment),
+            'packet_size': config.packetSize,
+            'delay': config.interPacketDelay,
+            'dest_ip': [config.destinationIpAddress.octets[i] for i in range(4)],
+            'src_port': config.sourcePort}
+        
+    def set_gige_stream_config( self, unsigned int chan, net_index, frag, packet_size, delay,
+            dest_ip, src_port):
+        cdef fc2Error r
+        cdef int i
+        cdef fc2GigEStreamChannel config
+
+        config.networkInterfaceIndex = net_index        
+        config.doNotFragment = frag
+        config.packetSize = packet_size
+        config.interPacketDelay = delay
+
+        for i in range(4):
+            config.destinationIpAddress.octets[i] = dest_ip[i]
+        config.sourcePort = src_port
+
+        with nogil:
+            r = fc2SetGigEStreamChannelInfo(self.ctx, chan, &config)
         raise_error(r)
 
 
