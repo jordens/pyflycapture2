@@ -1,7 +1,7 @@
 Source: python-flycapture2
 Section: python
 Priority: optional
-Maintainer: Robert Jordens <jordens@phys.ethz.ch>
+Maintainer: Robert Jordens <robert@joerdens.org>
 Build-Depends: cdbs (>= 0.4.90~),
  python (>= 2.6.6-3~),
  python-setuptools,

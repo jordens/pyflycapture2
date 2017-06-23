@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 #
 #   pyflycapture2 - python bindings for libflycapture2_c
-#   Copyright (C) 2012 Robert Jordens <jordens@phys.ethz.ch>
+#   Copyright (C) 2012 Robert Jordens <robert@joerdens.org>
 #
 #   This program is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by
@@ -55,7 +55,7 @@ http://www.ptgrey.com/support/downloads/documents/flycapture/Doxygen/html/index.
 (C++ API)""",
     version="0.1+dev",
     author="Robert Jordens",
-    author_email="jordens@phys.ethz.ch",
+    author_email="robert@joerdens.org",
     url="http://launchpad.net/pyflycapture2",
     license="GPLv3+",
     install_requires=["numpy"],

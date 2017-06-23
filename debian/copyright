@@ -1,17 +1,17 @@
-This package was debianized by Robert Jordens <jordens@phys.ethz.ch> on
+This package was debianized by Robert Jordens <robert@joerdens.org> on
 Sun Feb 26 05:38:54 MST 2012.
 
 Copyright: 
 
-    Copyright (C) 2012 Robert Jordens <jordens@phys.ethz.ch>
+    Copyright (C) 2012 Robert Jordens <robert@joerdens.org>
 
 License:
     
-    Upstream Author: Robert Jordens <jordens@phys.ethz.ch>
+    Upstream Author: Robert Jordens <robert@joerdens.org>
     Project Homepage: https://launchpad.net/pyflycapture2
     Released under the GPL
 
-    Copyright (C) 2011 Robert Jordens <jordens@phys.ethz.ch>
+    Copyright (C) 2011 Robert Jordens <robert@joerdens.org>
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
