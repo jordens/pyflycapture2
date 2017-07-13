@@ -23,6 +23,8 @@ Download Linux (64-bit, 32-bit, or ARM, whichever is appropriate).
 This requires registration. Follow the instructions in those packages to
 install the libraries.
 
+It will also be necessary to copy or link the contents of flycapture.2x/lib/C to /usr/lib.
+
 Install pyflycapture2
 ---------------------
 
